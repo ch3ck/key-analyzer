@@ -1,23 +1,32 @@
-default:
-	gcc -O3 -c bloom/bloom.c -o bloom.o
-	gcc -O3 -c sha256/sha256.c -o sha256.o
-	gcc -O3 -c base58/base58.c -o base58.o
-	gcc -O3 -c rmd160/rmd160.c -o rmd160.o
-	gcc -O3 -c xxhash/xxhash.c -o xxhash.o
-	#gcc -O3 -c gmpecc.c -o gmpecc.o
-	gcc -O3 -c util.c -o util.o
-	gcc -O3 -o test_functions test_functions.c util.o
-	gcc -O3 -o rehashaddress rehashaddress.c gmpecc.c util.o sha256.o base58.o rmd160.o -lgmp
-	gcc -O3 -o calculatefromkey calculatefromkey.c gmpecc.c util.o base58.o sha256.o rmd160.o -lgmp	`libgcrypt-config --cflags --libs`
-	gcc -O3 -o calculatefrompublickey calculatefrompublickey.c util.o base58.o sha256.o rmd160.o -lgmp
-	gcc -O3 -o division division.c gmpecc.c util.o base58.o sha256.o rmd160.o -lgmp
-	gcc -O3 -o math math.c gmpecc.c util.o  base58.o sha256.o rmd160.o -lgmp
-	gcc -O3 -o modmath  modmath.c gmpecc.c util.o  base58.o sha256.o rmd160.o -lgmp
-	gcc -O3 -o keygen keygen.c gmpecc.c util.o sha256.o base58.o rmd160.o -lgmp -lcrypto `libgcrypt-config --cflags --libs`
-	gcc -O3 -o sharedsecret sharedsecret.c gmpecc.c util.o sha256.o base58.o rmd160.o -lgmp `libgcrypt-config --cflags --libs`
-	gcc -o addr2rmd addr2rmd.c util.o base58.o
-	gcc -o test_functions test_functions.c util.o
-	gcc -O3 -o verifymsg verifymsg.c gmpecc.c util.o sha256.o base58.o rmd160.o -lgmp
-	#rm *.o
+# Builds and runs the ECC crypto project
+#
+CC          := gcc
+CXX         := g++
+RM          := rm -f
+LDLIBS      := -lm
+CFLAGS      := -O3
+LIBS        := -lgmp $(shell libgcrypt-config --cflags --libs)
+SRCDIR      := .
+OBJDIR      := obj
+BINDIR      := bin
+SOURCES     := $(wildcard $(SRCDIR)/*.c)
+OBJECTS     := $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SOURCES))
+EXECUTABLES := test_functions rehashaddress calculatefromkey calculatefrompublickey division math modmath keygen sharedsecret addr2rmd verifymsg
+
+.PHONY: all clean
+all: $(EXECUTABLES)
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+test_functions: $(OBJDIR)/util.o
+	$(CC) $(CFLAGS) -o $(BINDIR)/$@ test_functions.c $^
+
+rehashaddress calculatefromkey division math modmath keygen sharedsecret addr2rmd verifymsg: $(OBJDIR)/util.o $(OBJDIR)/gmpecc.o $(OBJDIR)/sha256.o $(OBJDIR)/base58.o $(OBJDIR)/rmd160.o
+	$(CC) $(CFLAGS) -o $(BINDIR)/$@ $@.c $^ $(LIBS)
+
+calculatefrompublickey: $(OBJDIR)/util.o $(OBJDIR)/base58.o $(OBJDIR)/sha256.o $(OBJDIR)/rmd160.o
+	$(CC) $(CFLAGS) -o $(BINDIR)/$@ $@.c $^ $(LIBS)
+
 clean:
-	rm -r *.o
+	rm -rf $(OBJDIR)/*.o $(BINDIR)/*
