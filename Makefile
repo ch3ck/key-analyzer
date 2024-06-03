@@ -11,8 +11,10 @@ OBJECTS     := $(BINDIR)/bloom.o $(BINDIR)/sha256.o $(BINDIR)/base58.o $(BINDIR)
 SOURCES     := $(wildcard $(SRCDIR)/*.c)
 EXECUTABLES := test_functions rehashaddress calculatefromkey calculatefrompublickey division math modmath keygen sharedsecret addr2rmd verifymsg
 
-.PHONY: all clean
-all: $(EXECUTABLES)
+.PHONY: all
+all: default
+
+test: $(EXECUTABLES)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -26,10 +28,12 @@ rehashaddress calculatefromkey division math modmath keygen sharedsecret addr2rm
 calculatefrompublickey: $(OBJDIR)/util.o $(OBJDIR)/base58.o $(OBJDIR)/sha256.o $(OBJDIR)/rmd160.o
 	$(CC) $(CFLAGS) -o $(BINDIR)/$@ $@.c $^ $(LIBS)
 
+.PHONY: clean
 clean:
 	rm -rf $(OBJDIR)/*.o $(BINDIR)/*
 
 
+.PHONY: default
 default:
 	@mkdir -p bin
 	$(CC) $(CFLAGS) -c bloom/bloom.c -o $(BINDIR)/bloom.o
